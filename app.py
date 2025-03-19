@@ -34,19 +34,17 @@ def check_in():
         if not qr_data:
             return jsonify({"message": "❌ Ошибка: пустые данные QR-кода!"}), 400
 
-        # Извлекаем данные из QR-кода (ищем строки с Name, Phone, Email)
-        name_match = re.search(r"Name:\s*(.+)", qr_data)
-        phone_match = re.search(r"Phone:\s*(\d+)", qr_data)
-        email_match = re.search(r"Email:\s*([\w\.\-]+@[\w\.\-]+)", qr_data)
+        # QR-код содержит Name, Phone, Email в таком порядке
+        qr_parts = qr_data.strip().split("\n")
 
-        if not (name_match and phone_match and email_match):
+        if len(qr_parts) < 3:
             return jsonify({"message": "❌ Ошибка: Неверный формат QR-кода!"}), 400
 
-        name = name_match.group(1).strip()
-        phone = phone_match.group(1).strip()
-        email = email_match.group(1).strip().lower()
+        name = qr_parts[0].replace("Name:", "").strip()
+        phone = qr_parts[1].replace("Phone:", "").strip()
+        email = qr_parts[2].replace("Email:", "").strip().lower()
 
-        # Читаем все строки из Google Sheets
+        # Читаем данные из Google Sheets
         all_values = sheet.get_all_values()
         found = False
 
