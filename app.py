@@ -33,34 +33,24 @@ def check_in():
         if not qr_data:
             return jsonify({"message": "❌ Ошибка: пустые данные QR-кода!"}), 400
 
-        # QR-код должен содержать Email, Name, Phone в формате: "email|name|phone"
-        qr_parts = qr_data.strip().split("|")
-        if len(qr_parts) != 3:
-            return jsonify({"message": "❌ Ошибка: Неверный формат данных QR-кода!"}), 400
+        # Извлекаем Email из QR-кода
+        email = qr_data.strip()
 
-        email, name, phone = qr_parts
-        email = email.strip().lower()
-        name = name.strip()
-        phone = phone.strip()
+        if not email:
+            return jsonify({"message": "❌ Ошибка: не удалось извлечь Email из QR-кода!"}), 400
 
-        # Читаем все строки из Google Sheets
+        # Читаем данные из Google Sheets
         all_values = sheet.get_all_values()
         found = False
 
         for i, row in enumerate(all_values):
-            if len(row) >= 3:
-                sheet_email = row[0].strip().lower()  # Колонка A (Email)
-                sheet_name = row[1].strip()  # Колонка B (Name)
-                sheet_phone = row[2].strip()  # Колонка C (Phone)
-
-                # Проверяем совпадение Email, Name и Phone
-                if sheet_email == email and sheet_name == name and sheet_phone == phone:
-                    sheet.update_cell(i + 1, 10, "Пришёл")  # Колонка J (CheckIn)
-                    found = True
-                    break
+            if len(row) > 0 and row[0].strip().lower() == email.lower():  # Email в колонке A (1)
+                sheet.update_cell(i + 1, 10, "Пришёл")  # Колонка J (10-я)
+                found = True
+                break
 
         if found:
-            return jsonify({"message": f"✅ Гость {name} ({email}) отмечен как 'Пришёл'"}), 200
+            return jsonify({"message": f"✅ Гость {email} отмечен как 'Пришёл'"}), 200
         else:
             return jsonify({"message": "❌ Гость не найден в системе!"}), 404
 
