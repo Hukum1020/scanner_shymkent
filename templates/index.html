@@ -26,16 +26,17 @@
         const context = canvas.getContext("2d");
         const resultText = document.getElementById("result");
         const errorText = document.getElementById("error");
-        let scanning = true; // Флаг для остановки сканирования после успешного чтения
 
         async function startScanner() {
             try {
+                // Запрашиваем доступ к камере (задняя, если доступно)
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 video.srcObject = stream;
 
                 video.onloadedmetadata = () => {
                     console.log("Камера запущена:", video.videoWidth, "x", video.videoHeight);
-                    scanQRCode(); // Запуск сканирования после загрузки камеры
+                    // Начинаем циклическое сканирование каждые 1.5 секунды
+                    scanQRCode();
                 };
             } catch (error) {
                 console.error("Ошибка доступа к камере:", error);
@@ -44,8 +45,7 @@
         }
 
         function scanQRCode() {
-            if (!scanning) return; // Остановить сканирование после первого успешного результата
-
+            // Захватываем кадр с камеры
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -54,13 +54,11 @@
             let code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
 
             if (code) {
-                scanning = false; // Остановить дальнейшее сканирование
-                video.srcObject.getTracks().forEach(track => track.stop()); // Остановить камеру
-
                 console.log("QR-код найден:", code.data);
                 resultText.innerText = "✅ QR-код: " + code.data;
                 errorText.innerText = "";
 
+                // Отправляем данные на сервер (при необходимости)
                 fetch("/check-in", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -68,6 +66,7 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    // Выводим ответ сервера
                     resultText.innerText = data.message;
                 })
                 .catch(error => {
@@ -75,10 +74,14 @@
                     errorText.innerText = "❌ Ошибка отправки данных!";
                 });
             } else {
-                setTimeout(scanQRCode, 500); // Повторное сканирование каждые 500 мс
+                console.log("QR-код не найден, продолжаем сканирование...");
             }
+
+            // Повторяем сканирование через 1.5 секунды
+            setTimeout(scanQRCode, 1500);
         }
 
+        // Запуск сканера
         startScanner();
     </script>
 </body>
