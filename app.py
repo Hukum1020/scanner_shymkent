@@ -1,6 +1,7 @@
 import os
 import json
 import gspread
+import re
 from flask import Flask, request, jsonify, render_template
 from oauth2client.service_account import ServiceAccountCredentials
 
@@ -33,24 +34,36 @@ def check_in():
         if not qr_data:
             return jsonify({"message": "❌ Ошибка: пустые данные QR-кода!"}), 400
 
-        # Извлекаем Email из QR-кода
-        email = qr_data.strip()
+        # Извлекаем данные из QR-кода (ищем строки с Name, Phone, Email)
+        name_match = re.search(r"Name:\s*(.+)", qr_data)
+        phone_match = re.search(r"Phone:\s*(\d+)", qr_data)
+        email_match = re.search(r"Email:\s*([\w\.\-]+@[\w\.\-]+)", qr_data)
 
-        if not email:
-            return jsonify({"message": "❌ Ошибка: не удалось извлечь Email из QR-кода!"}), 400
+        if not (name_match and phone_match and email_match):
+            return jsonify({"message": "❌ Ошибка: Неверный формат QR-кода!"}), 400
 
-        # Читаем данные из Google Sheets
+        name = name_match.group(1).strip()
+        phone = phone_match.group(1).strip()
+        email = email_match.group(1).strip().lower()
+
+        # Читаем все строки из Google Sheets
         all_values = sheet.get_all_values()
         found = False
 
         for i, row in enumerate(all_values):
-            if len(row) > 0 and row[0].strip().lower() == email.lower():  # Email в колонке A (1)
-                sheet.update_cell(i + 1, 10, "Пришёл")  # Колонка J (10-я)
-                found = True
-                break
+            if len(row) >= 3:
+                sheet_email = row[0].strip().lower()  # Колонка A (Email)
+                sheet_name = row[1].strip()  # Колонка B (Name)
+                sheet_phone = row[2].strip()  # Колонка C (Phone)
+
+                # Проверяем совпадение Email, Name и Phone
+                if sheet_email == email and sheet_name == name and sheet_phone == phone:
+                    sheet.update_cell(i + 1, 10, "Пришёл")  # Колонка J (CheckIn)
+                    found = True
+                    break
 
         if found:
-            return jsonify({"message": f"✅ Гость {email} отмечен как 'Пришёл'"}), 200
+            return jsonify({"message": f"✅ Гость {name} ({email}) отмечен как 'Пришёл'"}), 200
         else:
             return jsonify({"message": "❌ Гость не найден в системе!"}), 404
 
