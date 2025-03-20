@@ -50,8 +50,8 @@ def check_in():
 
         for i, row in enumerate(all_values):
             if len(row) >= 3:
-                sheet_email = row[0].strip().lower()  # Колонка A (Email)
-                sheet_name = row[1].strip()  # Колонка B (Name)
+                sheet_email = row[1].strip().lower()  # Колонка A (Email)
+                sheet_name = row[0].strip()  # Колонка B (Name)
                 sheet_phone = row[2].strip()  # Колонка C (Phone)
 
                 # Проверяем совпадение Email, Name и Phone
