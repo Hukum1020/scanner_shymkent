@@ -61,7 +61,7 @@ def check_in():
                     break
 
         if found:
-            return jsonify({"message": f"✅ Гость {name} ({email}) отмечен как 'Пришёл'"}), 200
+            return jsonify({"message": f"✅ Гость {name} отмечен как 'Пришёл'"}), 200
         else:
             return jsonify({"message": "❌ Гость не найден в системе!"}), 404
 
