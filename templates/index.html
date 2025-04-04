@@ -4,21 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR-сканнер</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        #video { width: 100%; max-width: 400px; }
-        canvas { display: none; }
-        #result { font-size: 18px; margin-top: 10px; color: green; }
-        #error { font-size: 16px; color: red; margin-top: 10px; }
-    </style>
 </head>
 <body>
-    <h2>Сканируйте QR-код</h2>
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas"></canvas>
-    <p id="result">Ожидание сканирования...</p>
-    <p id="error"></p>
+
+    <div class="content">
+        <h2>Сканируйте QR-код</h2>
+        <p id="result">Ожидание сканирования...</p>
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+        <p id="error"></p>
+    </div>
+
+    <img src="logo2.png" alt="Logo" id="logo">
 
     <script>
         const video = document.getElementById("video");
@@ -29,13 +28,11 @@
 
         async function startScanner() {
             try {
-                // Запрашиваем доступ к камере (задняя, если доступно)
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 video.srcObject = stream;
 
                 video.onloadedmetadata = () => {
                     console.log("Камера запущена:", video.videoWidth, "x", video.videoHeight);
-                    // Начинаем циклическое сканирование каждые 1.5 секунды
                     scanQRCode();
                 };
             } catch (error) {
@@ -45,7 +42,6 @@
         }
 
         function scanQRCode() {
-            // Захватываем кадр с камеры
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -58,7 +54,6 @@
                 resultText.innerText = "✅ QR-код: " + code.data;
                 errorText.innerText = "";
 
-                // Отправляем данные на сервер (при необходимости)
                 fetch("/check-in", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -66,7 +61,6 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    // Выводим ответ сервера
                     resultText.innerText = data.message;
                 })
                 .catch(error => {
@@ -77,12 +71,11 @@
                 console.log("QR-код не найден, продолжаем сканирование...");
             }
 
-            // Повторяем сканирование через 1.5 секунды
             setTimeout(scanQRCode, 1500);
         }
 
-        // Запуск сканера
         startScanner();
     </script>
+
 </body>
 </html>
